@@ -1,0 +1,43 @@
+param(
+    [string] $subscriptionId,
+    [string] $routeTableId,
+    [string] $vNetResourceGroupName,
+    [string] $virtualNetworkName,
+    [string] $workloadSubnetName,
+    [string] $subnetAddressPrefix,
+    [string] $nsgName
+)
+
+Set-AzContext -Subscription $subscriptionId
+
+$vnetObject = Get-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $vNetResourceGroupName
+
+# Assign custom route table and disable PrivateEndpointNetworkPoliciesFlag
+Set-AzVirtualNetworkSubnetConfig `
+    -Name $workloadSubnetName `
+    -VirtualNetwork $vnetObject `
+    -AddressPrefix $subnetAddressPrefix `
+    -RouteTableId $routeTableId `
+    -PrivateEndpointNetworkPoliciesFlag "Disabled"
+
+# Add service endpoint
+Add-AzVirtualNetworkSubnetConfig
+    -Name $workloadSubnetName `
+    -VirtualNetwork $vnetObject `
+    -AddressPrefix $subnetAddressPrefix `
+    -ServiceEndpoint "Microsoft.Storage"
+$vnetObject | Set-AzVirtualNetwork
+
+# Add NSG rule
+$nsg = Get-AzNetworkSecurityGroup -Name $nsgName -ResourceGroupName $vNetResourceGroupName
+$nsg | Add-AzNetworkSecurityRuleConfig `
+        -Name 'AKSTraffic' `
+        -Access Allow `
+        -Protocol Tcp `
+        -Direction Outbound `
+        -Priority 900 `
+        -SourceAddressPrefix $subnetAddressPrefix `
+        -SourcePortRange * `
+        -DestinationAddressPrefix * `
+        -DestinationPortRange 443, 123
+$nsg | Set-AzNetworkSecurityGroup
