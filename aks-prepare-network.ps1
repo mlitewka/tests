@@ -30,7 +30,7 @@ Set-AzVirtualNetworkSubnetConfig `
     -PrivateEndpointNetworkPoliciesFlag "Disabled"
 
 # Add service endpoint
-Add-AzVirtualNetworkSubnetConfig
+Add-AzVirtualNetworkSubnetConfig `
     -Name $workloadSubnetName `
     -VirtualNetwork $vnetObject `
     -AddressPrefix $subnetAddressPrefix `
