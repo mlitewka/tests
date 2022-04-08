@@ -20,21 +20,20 @@ Connect-AzAccount -ServicePrincipal -Credential $pscredential -Tenant $principal
 Set-AzContext -Subscription $subscriptionId
 
 $vnetObject = Get-AzVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $vNetResourceGroupName
+$subnetConfigObject = Get-AzVirtualNetworkSubnetConfig -Name $workloadSubnetName -VirtualNetwork $vnetObject
 
-# Assign custom route table and disable PrivateEndpointNetworkPoliciesFlag
+# Assign custom route table, disable PrivateEndpointNetworkPoliciesFlag, add service endpoint
+$serviceEndPoints = New-Object 'System.Collections.Generic.List[String]'
+$subnetConfigObject.ServiceEndpoints | ForEach-Object { $serviceEndPoints.Add($_.service) }
+
 Set-AzVirtualNetworkSubnetConfig `
     -Name $workloadSubnetName `
     -VirtualNetwork $vnetObject `
     -AddressPrefix $subnetAddressPrefix `
     -RouteTableId $routeTableId `
-    -PrivateEndpointNetworkPoliciesFlag "Disabled"
-
-# Add service endpoint
-Add-AzVirtualNetworkSubnetConfig `
-    -Name $workloadSubnetName `
-    -VirtualNetwork $vnetObject `
-    -AddressPrefix $subnetAddressPrefix `
-    -ServiceEndpoint "Microsoft.Storage"
+    -PrivateEndpointNetworkPoliciesFlag "Disabled" `
+    -ServiceEndpoint $serviceEndPoints.Add("Microsoft.KeyVault")
+    
 $vnetObject | Set-AzVirtualNetwork
 
 # Add NSG rule
