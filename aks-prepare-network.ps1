@@ -32,7 +32,7 @@ Set-AzVirtualNetworkSubnetConfig `
     -AddressPrefix $subnetAddressPrefix `
     -RouteTableId $routeTableId `
     -PrivateEndpointNetworkPoliciesFlag "Disabled" `
-    -ServiceEndpoint $serviceEndPoints.Add("Microsoft.KeyVault")
+    -ServiceEndpoint $serviceEndPoints.Add("Microsoft.Storage")
     
 $vnetObject | Set-AzVirtualNetwork
 
