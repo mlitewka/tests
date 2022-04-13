@@ -16,7 +16,7 @@ $pscredential = New-Object -TypeName System.Management.Automation.PSCredential -
 Connect-AzAccount -ServicePrincipal -Credential $pscredential -Tenant $principalTenant
 Set-AzContext -Subscription $subscriptionId
 
-$aksClusterObject = Get-AzAksCluster -Name $aksName -ResourceGroupName $aksResourceGroup
+# $aksClusterObject = Get-AzAksCluster -Name $aksName -ResourceGroupName $aksResourceGroup
 
 # $aksNamespacesArray = ($aksNamespaces -replace '\s','').Split(',') | Select-Object -Unique
 # $aksNamespacesArray += "cicd"
