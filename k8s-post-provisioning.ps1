@@ -18,11 +18,11 @@ Set-AzContext -Subscription $subscriptionId
 
 $aksClusterObject = Get-AzAksCluster -Name $aksName -ResourceGroupName $aksResourceGroup
 
-$aksNamespacesArray = ($aksNamespaces -replace '\s','').Split(',') | Select-Object -Unique
-$aksNamespacesArray += "cicd"
-foreach ($namespace in $aksNamespacesArray) {
-    $aksClusterObject | Invoke-AzAksRunCommand -Command "kubectl create namespace ${namespace}"
-}
+# $aksNamespacesArray = ($aksNamespaces -replace '\s','').Split(',') | Select-Object -Unique
+# $aksNamespacesArray += "cicd"
+# foreach ($namespace in $aksNamespacesArray) {
+#     $aksClusterObject | Invoke-AzAksRunCommand -Command "kubectl create namespace ${namespace}"
+# }
 
-$aksClusterObject | Invoke-AzAksRunCommand -Command "kubectl create serviceaccount sa-cicd --namespace cicd"
-$aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment ".\custom-roles.yaml" -Command "kubectl apply -f custom-roles.yaml"
+# $aksClusterObject | Invoke-AzAksRunCommand -Command "kubectl create serviceaccount sa-cicd --namespace cicd"
+# $aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment ".\custom-roles.yaml" -Command "kubectl apply -f custom-roles.yaml"
