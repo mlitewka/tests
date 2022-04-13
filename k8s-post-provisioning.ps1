@@ -3,7 +3,8 @@ param(
     [string] $aksResourceGroup,
     [string] $aksNamespaces,
     [string] $subscriptionId,
-    [string] $kvName
+    [string] $kvName,
+    [string] $repositoryUrl
 )
 
 Connect-AzAccount -Identity
@@ -16,6 +17,9 @@ $pscredential = New-Object -TypeName System.Management.Automation.PSCredential -
 Connect-AzAccount -ServicePrincipal -Credential $pscredential -Tenant $principalTenant
 Set-AzContext -Subscription $subscriptionId
 
+New-Item -Name "aks-repository" -ItemType "directory"
+git clone $repositoryUrl .\aks-repository
+
 $aksClusterObject = Get-AzAksCluster -Name $aksName -ResourceGroupName $aksResourceGroup
 
 $aksNamespacesArray = ($aksNamespaces -replace '\s','').Split(',') | Select-Object -Unique
@@ -25,4 +29,4 @@ foreach ($namespace in $aksNamespacesArray) {
 }
 
 $aksClusterObject | Invoke-AzAksRunCommand -Command "kubectl create serviceaccount sa-cicd --namespace cicd"
-$aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment ".\custom-roles.yaml" -Command "kubectl apply -f custom-roles.yaml"
+$aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment ".\aks-repository\k8s-yamls\custom-roles.yaml" -Command "kubectl apply -f custom-roles.yaml"
