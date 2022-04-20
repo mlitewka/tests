@@ -25,4 +25,4 @@ foreach ($namespace in $aksNamespacesArray) {
 }
 
 $aksClusterObject | Invoke-AzAksRunCommand -Command "kubectl create serviceaccount sa-cicd --namespace cicd" -Force
-$aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment "./custom-roles.yaml" -Command "ls -al && whoami && chmod 777 custom-roles.yaml && ls -al" -Force
+$aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment "./custom-roles.yaml" -Command "chmod -R +r . && kubectl apply -f custom-roles.yaml" -Force
