@@ -100,6 +100,6 @@ $aksClusterObject | Invoke-AzAksRunCommand `
     -Force
 
 # gatekeeper policy manager
-Start-BitsTransfer -Source "https://github.com/sighupio/gatekeeper-policy-manager/archive/refs/heads/main.zip"
+Invoke-WebRequest -Uri "https://github.com/sighupio/gatekeeper-policy-manager/archive/refs/heads/main.zip" -OutFile ./main.zip
 Expand-Archive -Path ./main.zip -DestinationPath .
 $aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment "./gatekeeper-policy-manager-main/" -Command "chmod -R +r . && kubectl apply -k ." -Force
