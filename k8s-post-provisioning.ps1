@@ -78,7 +78,6 @@ $aksClusterObject | Invoke-AzAksRunCommand `
 # falcosecurity
 $aksClusterObject | Invoke-AzAksRunCommand `
     -Command @"
-    chmod -R +r .
     helm repo add falcosecurity https://falcosecurity.github.io/charts
     helm install falco falcosecurity/falco \
     --version 1.16.0 \
@@ -90,7 +89,6 @@ $aksClusterObject | Invoke-AzAksRunCommand `
 # gatekeeper
 $aksClusterObject | Invoke-AzAksRunCommand `
     -Command @"
-    chmod -R +r .
     helm repo add gatekeeper https://open-policy-agent.github.io/gatekeeper/charts
     helm install gatekeeper gatekeeper/gatekeeper \
     --namespace gatekeeper-system \
