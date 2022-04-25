@@ -60,3 +60,45 @@ $aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment "./private-
 
 (Get-Content ./private-premium-azurefile-csi.yaml).replace('<storageAccountName>', $saStandardName).replace('<resourceGroup>', $aksResourceGroup) | Set-Content ./private-premium-azurefile-csi.yaml
 $aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment "./private-premium-azurefile-csi.yaml" -Command "chmod -R +r . && kubectl apply -f private-premium-azurefile-csi.yaml" -Force
+
+# ingress-nginx
+$aksClusterObject | Invoke-AzAksRunCommand `
+    -CommandContextAttachment "./custom-ingress-nginx-values.yaml" `
+    -Command @"
+    chmod -R +r .
+    helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+    helm install ingress-nginx -f custom-ingress-nginx-values.yaml ingress-nginx/ingress-nginx \
+    --version 4.0.1 \
+    --create-namespace \
+    --namespace ingress-nginx \
+    --set controller.replicaCount=3
+"@ `
+    -Force
+
+# falcosecurity
+$aksClusterObject | Invoke-AzAksRunCommand `
+    -Command @"
+    chmod -R +r .
+    helm repo add falcosecurity https://falcosecurity.github.io/charts
+    helm install falco falcosecurity/falco \
+    --version 1.16.0 \
+    --create-namespace \
+    --namespace sec-falco-system
+"@ `
+    -Force
+
+# gatekeeper
+$aksClusterObject | Invoke-AzAksRunCommand `
+    -Command @"
+    chmod -R +r .
+    helm repo add gatekeeper https://open-policy-agent.github.io/gatekeeper/charts
+    helm install gatekeeper gatekeeper/gatekeeper \
+    --namespace gatekeeper-system \
+    --create-namespace \
+    --version 3.7.0
+"@ `
+    -Force
+
+# gatekeeper policy manager
+git clone --depth 1 --branch v0.5.1 https://github.com/sighupio/gatekeeper-policy-manager.git
+$aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment "./gatekeeper-policy-manager/" -Command "chmod -R +r . && kubectl apply -k ." -Force
