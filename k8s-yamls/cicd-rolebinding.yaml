@@ -1,0 +1,14 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: ccp-cicd-secrets-reader-rolebinding
+  namespace: cicd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ccp-cicd-secrets-reader
+subjects:
+- kind: Group
+  namespace: cicd
+  name: azureGroupId
+  apiGroup: rbac.authorization.k8s.io

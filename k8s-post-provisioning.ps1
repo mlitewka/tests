@@ -3,7 +3,11 @@ param(
     [string] $aksResourceGroup,
     [string] $aksNamespaces,
     [string] $subscriptionId,
-    [string] $kvName
+    [string] $kvName,
+    [string] $readerGroupId,
+    [string] $writerGroupId,
+    [string] $saPremiumName,
+    [string] $saStandardName
 )
 
 Connect-AzAccount -Identity
@@ -18,11 +22,41 @@ Set-AzContext -Subscription $subscriptionId
 
 $aksClusterObject = Get-AzAksCluster -Name $aksName -ResourceGroupName $aksResourceGroup
 
+# Create Namespaces
 $aksNamespacesArray = ($aksNamespaces -replace '\s','').Split(';') | Select-Object -Unique
 $aksNamespacesArray += "cicd"
 foreach ($namespace in $aksNamespacesArray) {
     $aksClusterObject | Invoke-AzAksRunCommand -Command "kubectl create namespace ${namespace}" -Force
 }
 
+# Create Serviceaccount
 $aksClusterObject | Invoke-AzAksRunCommand -Command "kubectl create serviceaccount sa-cicd --namespace cicd" -Force
 $aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment "./custom-roles.yaml" -Command "chmod -R +r . && kubectl apply -f custom-roles.yaml" -Force
+
+# Create role and cluster role bindings
+(Get-Content ./reader-clusterrolebinding.yaml).replace('azureGroupId', $readerGroupId) | Set-Content ./reader-clusterrolebinding.yaml
+$aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment "./reader-clusterrolebinding.yaml" -Command "chmod -R +r . && kubectl apply -f reader-clusterrolebinding.yaml" -Force
+
+(Get-Content ./writer-clusterrolebinding.yaml).replace('azureGroupId', $writerGroupId) | Set-Content ./writer-clusterrolebinding.yaml
+$aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment "./writer-clusterrolebinding.yaml" -Command "chmod -R +r . && kubectl apply -f writer-clusterrolebinding.yaml" -Force
+
+(Get-Content ./cicd-rolebinding.yaml).replace('azureGroupId', $writerGroupId) | Set-Content ./cicd-rolebinding.yaml
+$aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment "./cicd-rolebinding.yaml" -Command "chmod -R +r . && kubectl apply -f cicd-rolebinding.yaml" -Force
+
+(Get-Content ./reader-rolebinding.yaml).replace('azureGroupId', $readerGroupId) | Set-Content ./reader-rolebinding.yaml
+(Get-Content ./writer-rolebinding.yaml).replace('azureGroupId', $writerGroupId) | Set-Content ./writer-rolebinding.yaml
+$aksNamespacesArray = ($aksNamespaces -replace '\s','').Split(';') | Select-Object -Unique
+foreach ($namespace in $aksNamespacesArray) {
+    (Get-Content ./reader-rolebinding.yaml).replace('namespace: app-ns', "namespace: $namespace") | Set-Content ./reader-rolebinding.yaml
+    $aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment "./reader-rolebinding.yaml" -Command "chmod -R +r . && kubectl apply -f reader-rolebinding.yaml" -Force
+    
+    (Get-Content ./writer-rolebinding.yaml).replace('namespace: app-ns', "namespace: $namespace") | Set-Content ./writer-rolebinding.yaml
+    $aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment "./writer-rolebinding.yaml" -Command "chmod -R +r . && kubectl apply -f writer-rolebinding.yaml" -Force
+}
+
+# Deploy storage classes
+(Get-Content ./private-azurefile-csi.yaml).replace('<storageAccountName>', $saStandardName).replace('<resourceGroup>', $aksResourceGroup) | Set-Content ./private-azurefile-csi.yaml
+$aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment "./private-azurefile-csi.yaml" -Command "chmod -R +r . && kubectl apply -f private-azurefile-csi.yaml" -Force
+
+(Get-Content ./private-premium-azurefile-csi.yaml).replace('<storageAccountName>', $saStandardName).replace('<resourceGroup>', $aksResourceGroup) | Set-Content ./private-premium-azurefile-csi.yaml
+$aksClusterObject | Invoke-AzAksRunCommand -CommandContextAttachment "./private-premium-azurefile-csi.yaml" -Command "chmod -R +r . && kubectl apply -f private-premium-azurefile-csi.yaml" -Force

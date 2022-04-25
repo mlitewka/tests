@@ -1,0 +1,14 @@
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: ccp-custom-writer-clusterrolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ccp-custom-cluster-writer
+subjects:
+- kind: Group
+  name: azureGroupId
+- kind: ServiceAccount
+  namespace: cicd
+  name: sa-cicd
