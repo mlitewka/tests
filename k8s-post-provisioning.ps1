@@ -110,11 +110,11 @@ $aksClusterObject | Invoke-AzAksRunCommand `
 
 # kured
 $aksClusterObject | Invoke-AzAksRunCommand `
-    -CommandContextAttachment "./kured-custom-values.yaml" `
+    -CommandContextAttachment "./custom-kured-values.yaml" `
     -Command @"
     chmod -R +r .
     helm repo add kured https://weaveworks.github.io/kured
-    helm install -f kured-custom-values.yaml kured kured/kured \
+    helm install -f custom-kured-values.yaml kured kured/kured \
     --namespace kured-system \
     --create-namespace \
     --version 2.9.1
