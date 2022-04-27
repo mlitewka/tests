@@ -1,0 +1,70 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8spodhostportspolicy
+  annotations:
+    description: >-
+      HostPorts should be disallowed, or at minimum restricted to a known list
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPodHostPortsPolicy
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            min:
+              description: "The start of the allowed port range, inclusive."
+              type: integer
+            max:
+              description: "The end of the allowed port range, inclusive."
+              type: integer
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spodhostportspolicy
+
+
+        violation[{"msg": msg, "details": {}}] {
+          o := input_object[_]
+          input_share_hostnetwork(o)
+          msg := sprintf("The specified hostNetwork and hostPort are not allowed, pod: %v. Allowed values: %v.", [input.review.object.metadata.name, input.parameters])
+        }
+
+        input_share_hostnetwork(o) {
+          o.spec.hostNetwork
+        }
+
+        input_share_hostnetwork(o) {
+          hostPort := input_containers(o)[_].ports[_].hostPort
+          hostPort < input.parameters.min
+        }
+
+        input_share_hostnetwork(o) {
+          hostPort := input_containers(o)[_].ports[_].hostPort
+          hostPort > input.parameters.max
+        }
+
+
+        input_object[o] {
+          input.review.object.kind == "Pod"
+          o := input.review.object
+        }
+
+        input_object[o] {
+          input.review.object.kind == "CronJob"
+          o := input.review.object.spec.jobTemplate.spec.template
+        }
+
+        input_object[o] {
+          o := input.review.object.spec.template
+        }
+
+        input_containers(o) = c {
+          c := o.spec.containers
+        }
+
+        input_containers(o) = c {
+          c := o.spec.initContainers
+        }

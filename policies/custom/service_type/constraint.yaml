@@ -1,0 +1,14 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sServiceTypePolicy
+metadata:
+  name: k8sservicetypepolicy
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Service"]
+    excludedNamespaces: []
+  parameters:
+    serviceTypes: [
+      "ClusterIP"
+    ]

@@ -1,0 +1,17 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPodHostPortsPolicy
+metadata:
+  name: k8spodhostportspolicy
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod", "ReplicationController"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "StatefulSet", "DaemonSet", "ReplicaSet"]
+      - apiGroups: ["batch"]
+        kinds: ["Job", "CronJob"]
+    excludedNamespaces: []
+  parameters:
+    min: 80
+    max: 9000

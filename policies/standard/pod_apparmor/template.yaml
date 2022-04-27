@@ -1,0 +1,57 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8spodapparmorpolicy
+  annotations:
+    description: >-
+      The specific AppArmor profile should be enabled and not 'unconfined'
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPodApparmorPolicy
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spodapparmorpolicy
+
+        violation[{"msg": msg}] {
+          o := input_object[_]
+          m := o.metadata
+          c := input_containers(o)[_]
+          
+          input_apparmor(c, m)
+          msg := sprintf("AppArmor profile is not defined or unconfined, pod: %v, container: %v.", [input.review.object.metadata.name, c.name])
+        }
+
+        input_apparmor(container, metadata) {
+          key := sprintf("container.apparmor.security.beta.kubernetes.io/%v", [container.name])
+          not metadata.annotations[key]
+        }
+
+        input_apparmor(container, metadata) {
+          metadata.annotations[key] == "unconfined"
+          key == sprintf("container.apparmor.security.beta.kubernetes.io/%v", [container.name])
+        }
+
+        input_object[o] {
+          input.review.object.kind == "Pod"
+          o := input.review.object
+        }
+
+        input_object[o] {
+          input.review.object.kind == "CronJob"
+          o := input.review.object.spec.jobTemplate.spec.template
+        }
+
+        input_object[o] {
+          o := input.review.object.spec.template
+        }
+
+        input_containers(o) = c {
+          c := o.spec.containers
+        }
+
+        input_containers(o) = c {
+          c := o.spec.initContainers
+        }

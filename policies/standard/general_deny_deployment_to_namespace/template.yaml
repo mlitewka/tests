@@ -1,0 +1,44 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8sdeniednamespacespolicy
+  annotations:
+    description: >-
+      Deny deployment to a namespace
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sDeniedNamespacesPolicy
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            namespaces:
+              description: "List of denied namespaces."
+              type: array
+              items: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sdeniednamespacespolicy
+
+        violation[{"msg": msg}] {
+          not authorize
+          msg := sprintf("Creation of any Kubernetes object in %v namespace(s) is not allowed. Kind: <%v>, Name: <%v>. Please use a different namespace", [input.parameters.namespaces, input.review.object.kind, input.review.object.metadata.name])
+        }
+
+        authorize = true {
+            not is_namespaced_resource
+        } else = false {
+            input.parameters.namespaces[_] == input.review.object.metadata.namespace
+        } else = true
+        
+
+        is_namespaced_resource {
+          has_field(input.review.object.metadata, "namespace")
+        }
+
+        has_field(object, field) = true {
+          object[field]
+        }

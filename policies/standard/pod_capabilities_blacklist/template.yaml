@@ -1,0 +1,72 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8spodcapabilitiesblacklistpolicy
+  annotations:
+    description: >-
+      CAP_NET_RAW capability must be disabled
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPodCapabilitiesBlacklistPolicy
+      validation:
+        # Schema for the `parameters` field
+        openAPIV3Schema:
+          properties:
+            capability:
+              description: "A capability that must be dropped"
+              type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spodcapabilitiesblacklistpolicy
+
+        violation[{"msg": msg}] {
+          c := input_containers[_]
+          not input_capability_raw_removed(c)
+          msg := sprintf("%v capability must be disabled: %v", [input.parameters.capability, c.name])
+        }
+
+        violation[{"msg": msg}] {
+          c := input_containers[_]
+          input_capability_raw_added(c)
+          msg := sprintf("%v capability must be disabled: %v", [input.parameters.capability, c.name])
+        }
+
+        input_capability_raw_added(c) {
+          c.securityContext.capabilities.add[_] == input.parameters.capability
+        }
+
+        input_capability_raw_removed(c) {
+          c.securityContext.capabilities.drop[_] == "all"
+        }
+
+        input_capability_raw_removed(c) {
+          c.securityContext.capabilities.drop[_] == input.parameters.capability
+        }
+
+        input_containers[c] {
+            c := input.review.object.spec.containers[_]
+        }
+        input_containers[c] {
+            c := input.review.object.spec.initContainers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind != "Pod"
+            input.review.object.kind != "CronJob"
+            c := input.review.object.spec.template.spec.containers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind != "Pod"
+            input.review.object.kind != "CronJob"
+            c := input.review.object.spec.template.spec.initContainers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind == "CronJob"
+            c := input.review.object.spec.jobTemplate.spec.template.spec.containers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind == "CronJob"
+            c := input.review.object.spec.jobTemplate.spec.template.spec.initContainers[_]
+        }

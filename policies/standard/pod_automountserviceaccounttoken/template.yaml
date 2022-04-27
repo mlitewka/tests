@@ -1,0 +1,48 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8spodautomountserviceaccounttokenpolicy
+  annotations:
+    description: >-
+      Automount of default service account token should be disabled
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPodAutomountserviceaccounttokenPolicy
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spodautomountserviceaccounttokenpolicy
+
+        violation[{"msg": msg}] {
+          o := input_object[_]
+          input_automount_service_account_token(o)
+          msg := sprintf("Service Account token automount must be disabled in the Pod definition (automountServiceAccountToken: false), pod: %v", [input.review.object.metadata.name])
+        }
+
+        input_automount_service_account_token(o) {
+          has_field(o.spec, "automountServiceAccountToken")
+        }
+        
+        input_automount_service_account_token(o) {
+          not o.spec.automountServiceAccountToken == false
+        }
+
+        input_object[o] {
+          input.review.object.kind == "Pod"
+          o := input.review.object
+        }
+
+        input_object[o] {
+          input.review.object.kind == "CronJob"
+          o := input.review.object.spec.jobTemplate.spec.template
+        }
+
+        input_object[o] {
+          o := input.review.object.spec.template
+        }
+
+        has_field(object, field) = true {
+          object[field]
+        }

@@ -1,0 +1,23 @@
+apiVersion: config.gatekeeper.sh/v1alpha1
+kind: Config
+metadata:
+  name: config
+  namespace: "gatekeeper-system"
+spec:
+  match:
+    - excludedNamespaces: [
+        "calico-system",
+        "kube-node-lease",
+        "kube-public",
+        "kube-system",
+        "tigera-operator",
+        "gatekeeper-system",
+        "sec-kube-bench-system",
+        "sec-kube-hunter-system",
+        "sec-falco-system",
+        "ingress-nginx",
+        "kured-system",
+        "cicd",
+        "debug"
+      ]
+      processes: ["*"]

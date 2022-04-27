@@ -1,0 +1,51 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8spodsecurityselinuxpolicy
+  annotations:
+    description: >-
+      Setting of custom SELinux options should be disallowed
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPodSecuritySelinuxPolicy
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spodsecurityselinuxpolicy
+
+        violation[{"msg": msg}] {
+          c := input_containers[_]
+          input_securitycontext_has_selinuxoptions(c)
+          msg := sprintf("SELinux options is not allowed: %v", [c.name])
+        }
+
+        input_securitycontext_has_selinuxoptions(c) {
+          c.securityContext.seLinuxOptions
+        }
+
+        input_containers[c] {
+            c := input.review.object.spec.containers[_]
+        }
+        input_containers[c] {
+            c := input.review.object.spec.initContainers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind != "Pod"
+            input.review.object.kind != "CronJob"
+            c := input.review.object.spec.template.spec.containers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind != "Pod"
+            input.review.object.kind != "CronJob"
+            c := input.review.object.spec.template.spec.initContainers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind == "CronJob"
+            c := input.review.object.spec.jobTemplate.spec.template.spec.containers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind == "CronJob"
+            c := input.review.object.spec.jobTemplate.spec.template.spec.initContainers[_]
+        }

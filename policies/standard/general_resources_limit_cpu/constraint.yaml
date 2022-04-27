@@ -1,0 +1,14 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sGeneralResourcesLimitCpuPolicy
+metadata:
+  name: k8sgeneralresourceslimitcpupolicy
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod", "ReplicationController"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "StatefulSet", "DaemonSet", "ReplicaSet"]
+      - apiGroups: ["batch"]
+        kinds: ["Job", "CronJob"]
+    excludedNamespaces: []

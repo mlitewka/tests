@@ -1,0 +1,55 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8spodcontainerimagetagpolicy
+  annotations:
+    description: >-
+      Image tag :latest disallowed
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPodContainerImagetagPolicy
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spodcontainerimagetagpolicy
+
+        violation[{"msg": msg}] {
+          c := input_containers[_]
+          tags := [forbid | forbid = endswith(c.image, ":latest")]
+          any(tags)
+          msg := sprintf("container <%v> uses a disallowed tag <%v>", [c.name, c.image])
+        }
+
+        violation[{"msg": msg}] {
+          c := input_containers[_]
+          tag := [contains(c.image, ":")]
+          not all(tag)
+          msg := sprintf("container <%v> didn't specify an image tag <%v>", [c.name, c.image])
+        }
+
+        input_containers[c] {
+            c := input.review.object.spec.containers[_]
+        }
+        input_containers[c] {
+            c := input.review.object.spec.initContainers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind != "Pod"
+            input.review.object.kind != "CronJob"
+            c := input.review.object.spec.template.spec.containers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind != "Pod"
+            input.review.object.kind != "CronJob"
+            c := input.review.object.spec.template.spec.initContainers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind == "CronJob"
+            c := input.review.object.spec.jobTemplate.spec.template.spec.containers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind == "CronJob"
+            c := input.review.object.spec.jobTemplate.spec.template.spec.initContainers[_]
+        }

@@ -1,0 +1,50 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8spodsecuritysysctlspolicy
+  annotations:
+    description: >-
+      Only specfic Systctls should be enabled
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPodSecuritySysctlsPolicy
+      validation:
+        # Schema for the `parameters` field
+        openAPIV3Schema:
+          type: object
+          properties:
+            allowedSysctls:
+              description: "An allowed-list of sysctls"
+              type: array
+              items: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spodsecuritysysctlspolicy
+
+        violation[{"msg": msg}] {
+          o := input_object[_]
+          sysctl := o.spec.securityContext.sysctls[_].name
+          not input_allowed_sysctl(sysctl)
+          msg := sprintf("The sysctl %v is not allowed, pod: %v", [sysctl, input.review.object.metadata.name])
+        }
+
+        input_allowed_sysctl(s) {
+          input.parameters.allowedSysctls[_] == s
+        }
+
+        input_object[o] {
+          input.review.object.kind == "Pod"
+          o := input.review.object
+        }
+
+        input_object[o] {
+          input.review.object.kind == "CronJob"
+          o := input.review.object.spec.jobTemplate.spec.template
+        }
+
+        input_object[o] {
+          o := input.review.object.spec.template
+        }

@@ -1,0 +1,17 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sStorageclassConstraintPolicy
+metadata:
+  name: k8sstorageclassconstraintpolicy
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["PersistentVolumeClaim"]
+      - apiGroups: ["apps"]
+        kinds: ["StatefulSet"]
+    excludedNamespaces: []
+  parameters:
+    storageclasses: [
+      "private-azurefile-csi",
+      "private-premium-azurefile-csi"
+    ]

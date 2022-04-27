@@ -1,0 +1,19 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPodSeccompPolicy
+metadata:
+  name: k8spodseccomppolicy
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod", "ReplicationController"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "StatefulSet", "DaemonSet", "ReplicaSet"]
+      - apiGroups: ["batch"]
+        kinds: ["Job", "CronJob"]
+    excludedNamespaces: []
+  parameters:
+    allowedProfiles: [
+      "runtime/default",
+      "docker/default"
+    ]

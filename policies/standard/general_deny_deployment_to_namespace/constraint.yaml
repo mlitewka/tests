@@ -1,0 +1,14 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sDeniedNamespacesPolicy
+metadata:
+  name: k8sdeniednamespacespolicy
+spec:
+  match:
+    kinds:
+      - apiGroups: ["*"]
+        kinds: ["*"]
+    excludedNamespaces: []
+  parameters:
+    namespaces: [
+      "default" 
+    ]

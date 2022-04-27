@@ -1,0 +1,21 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPodSecuritySysctlsPolicy
+metadata:
+  name: k8spodsecuritysysctlspolicy
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod", "ReplicationController"]
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "StatefulSet", "DaemonSet", "ReplicaSet"]
+      - apiGroups: ["batch"]
+        kinds: ["Job", "CronJob"]
+    excludedNamespaces: []
+  parameters:
+    allowedSysctls: [
+      "kernel.shm_rmid_forced",
+      "net.ipv4.ip_local_port_range",
+      "net.ipv4.tcp_syncookies",
+      "net.ipv4.ping_group_range"
+    ]

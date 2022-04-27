@@ -1,0 +1,56 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8spodcontainerrepospolicy
+  annotations:
+    description: >-
+      Only container images from Production ACR integrated with AKS cluster
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPodContainerReposPolicy
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            repos:
+              description: "An allowed-list of repositories"
+              type: array
+              items: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spodcontainerrepospolicy
+
+        violation[{"msg": msg}] {
+          c := input_containers[_]
+          satisfied := [good | repo = input.parameters.repos[_] ; good = startswith(c.image, repo)]
+          not any(satisfied)
+          msg := sprintf("Container <%v> use a container image from not allowed container repository  <%v>, allowed reposistories are %v", [c.name, c.image, input.parameters.repos])
+        }
+
+        input_containers[c] {
+            c := input.review.object.spec.containers[_]
+        }
+        input_containers[c] {
+            c := input.review.object.spec.initContainers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind != "Pod"
+            input.review.object.kind != "CronJob"
+            c := input.review.object.spec.template.spec.containers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind != "Pod"
+            input.review.object.kind != "CronJob"
+            c := input.review.object.spec.template.spec.initContainers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind == "CronJob"
+            c := input.review.object.spec.jobTemplate.spec.template.spec.containers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind == "CronJob"
+            c := input.review.object.spec.jobTemplate.spec.template.spec.initContainers[_]
+        }

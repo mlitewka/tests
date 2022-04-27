@@ -1,0 +1,51 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8spodsecurityprivilegedpolicy
+  annotations:
+    description: >-
+      Privileged containers should not be used
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sPodSecurityPrivilegedPolicy
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8spodsecurityprivilegedpolicy
+
+        violation[{"msg": msg}] {
+          c := input_containers[_]
+          input_privileged_container(c)
+          msg := sprintf("Privileged container is not allowed: %v", [c.name])
+        }
+
+        input_privileged_container(c){
+          c.securityContext.privileged == true
+        }
+
+        input_containers[c] {
+            c := input.review.object.spec.containers[_]
+        }
+        input_containers[c] {
+            c := input.review.object.spec.initContainers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind != "Pod"
+            input.review.object.kind != "CronJob"
+            c := input.review.object.spec.template.spec.containers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind != "Pod"
+            input.review.object.kind != "CronJob"
+            c := input.review.object.spec.template.spec.initContainers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind == "CronJob"
+            c := input.review.object.spec.jobTemplate.spec.template.spec.containers[_]
+        }
+        input_containers[c] {
+            input.review.object.kind == "CronJob"
+            c := input.review.object.spec.jobTemplate.spec.template.spec.initContainers[_]
+        }
