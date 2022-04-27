@@ -17,25 +17,30 @@ Set-AzContext -Subscription $subscriptionId
 
 $aksClusterObject = Get-AzAksCluster -Name $aksName -ResourceGroupName $aksResourceGroup
 
-# kube-bench
 $aksClusterObject | Invoke-AzAksRunCommand `
-    -CommandContextAttachment "./kube-bench-scan-job.yaml" `
+    -CommandContextAttachment "./gatekeeper-config.yaml" `
     -Command @"
     chmod -R +r .
-    kubectl create namespace sec-kube-bench-system
-    kubectl apply -f kube-bench-scan-job.yaml
-    kubectl wait --for=condition=complete job/kube-bench -n sec-kube-bench-system --timeout 120s
+    kubectl apply -f gatekeeper-config.yaml
 "@ `
     -Force
 
-# kube-hunter
+# templates
 $aksClusterObject | Invoke-AzAksRunCommand `
-    -CommandContextAttachment "./kube-hunter-scan-job.yaml" `
     -Command @"
-    chmod -R +r .
-    kubectl create namespace sec-kube-hunter-system
-    kubectl apply -f kube-hunter-scan-job.yaml -n sec-kube-hunter-system
-    kubectl wait --for=condition=complete job/kube-hunter -n sec-kube-hunter-system --timeout 120s
+    cd ~
+    curl -L https://github.com/mlitewka/tests/archive/refs/heads/main.zip --output main.zip
+    unzip main.zip
+    find . -iname "template*" -exec kubectl apply -f {} \;
 "@ `
     -Force
 
+# constraints
+$aksClusterObject | Invoke-AzAksRunCommand `
+    -Command @"
+    cd ~
+    curl -L https://github.com/mlitewka/tests/archive/refs/heads/main.zip --output main.zip
+    unzip main.zip
+    find . -iname "constraint*" -exec kubectl apply -f {} \;
+"@ `
+    -Force
