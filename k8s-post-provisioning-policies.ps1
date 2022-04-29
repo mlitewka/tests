@@ -31,7 +31,7 @@ $aksClusterObject | Invoke-AzAksRunCommand `
     cd ~
     curl -L https://github.com/mlitewka/tests/archive/refs/heads/main.zip --output main.zip
     unzip -qq main.zip
-    du -a | gawk '/template.*yaml/ {cmd="kubectl apply -f " $2; print cmd; system(cmd)}'
+    du -a | gawk '/template.*yaml/ {cmd="kubectl apply -f " `$2; print cmd; system(cmd)}'
 "@ `
     -Force
 
@@ -41,6 +41,6 @@ $aksClusterObject | Invoke-AzAksRunCommand `
     cd ~
     curl -L https://github.com/mlitewka/tests/archive/refs/heads/main.zip --output main.zip
     unzip -qq main.zip
-    du -a | gawk '/constraint.*yaml/ {cmd="kubectl apply -f " $2; print cmd; system(cmd)}'
+    du -a | gawk '/constraint.*yaml/ {cmd="kubectl apply -f " `$2; print cmd; system(cmd)}'
 "@ `
     -Force
