@@ -31,7 +31,7 @@ $aksClusterObject | Invoke-AzAksRunCommand `
     cd ~
     curl -L https://github.com/mlitewka/tests/archive/refs/heads/main.zip --output main.zip
     unzip main.zip
-    find . -iname "template*" -exec kubectl apply -f {} \;
+    du -a | gawk '/template.*yaml/ {system("kubectl apply -f " $2)}'
 "@ `
     -Force
 
@@ -41,6 +41,6 @@ $aksClusterObject | Invoke-AzAksRunCommand `
     cd ~
     curl -L https://github.com/mlitewka/tests/archive/refs/heads/main.zip --output main.zip
     unzip main.zip
-    find . -iname "constraint*" -exec kubectl apply -f {} \;
+    du -a | gawk '/constraint.*yaml/ {system("kubectl apply -f " $2)}'
 "@ `
     -Force
