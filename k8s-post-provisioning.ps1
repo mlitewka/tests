@@ -102,7 +102,7 @@ $aksClusterObject | Invoke-AzAksRunCommand `
     -Command @"
     cd ~
     curl -L https://github.com/sighupio/gatekeeper-policy-manager/archive/refs/tags/v0.5.1.zip --output gpm.zip
-    unzip gpm.zip
+    unzip -qq gpm.zip
     cd gatekeeper-policy-manager-0.5.1
     kubectl apply -k .
 "@ `
